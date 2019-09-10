@@ -27,19 +27,19 @@ func handler(request events.APIGatewayCustomAuthorizerRequest) (events.APIGatewa
 	app, err := firebase.NewApp(ctx, nil, opt)
 	if err != nil {
 		log.Fatalf("error initialising app: %v\n", err)
-		renderUnauthorized()
+		return renderUnauthorized()
 	}
 
 	client, err := app.Auth(ctx)
 	if err != nil {
 		log.Fatalf("error getting Auth client: %v\n", err)
-		renderUnauthorized()
+		return renderUnauthorized()
 	}
 
 	token, err := client.VerifyIDToken(ctx, idToken)
 	if err != nil {
 		log.Fatalf("error verifying ID token: %v\n", err)
-		renderUnauthorized()
+		return renderUnauthorized()
 	}
 
 	log.Printf("Verified UID: %v\n", token.UID)
