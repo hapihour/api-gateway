@@ -1,0 +1,9 @@
+# package directories
+vendor
+bin
+
+# Serverless directories
+.serverless
+node_modules
+
+.DS_Store

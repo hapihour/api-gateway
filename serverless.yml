@@ -1,0 +1,73 @@
+service: hh-api-gateway
+
+provider:
+  name: aws
+  region: ${self:custom.${self:provider.stage}.region}
+  runtime: go1.x
+  memorySize: 192
+  stage: ${opt:stage, 'dev'}
+
+package:
+  exclude:
+  - ./**
+  include:
+  - ./bin/**
+
+functions:
+  FirebaseAuthorizer:
+    handler: bin/handlers/FirebaseAuthorizer
+    environment:
+      FIREBASE_CONFIG: ${ssm:/${self:service}/${self:provider.stage}/FIREBASE_CONFIG~true}
+
+  Healthcheck:
+    handler: bin/handlers/Healthcheck
+    events:
+      - http:
+          path: healthcheck
+          method: get
+
+  Restricted:
+    handler: bin/handlers/Restricted
+    events:
+      - http:
+          path: restricted
+          method: get
+          authorizer:
+            name: FirebaseAuthorizer
+            resultTtlInSeconds: 0
+
+plugins:
+  - serverless-domain-manager
+
+custom:
+  customDomain:
+    domainName: ${self:custom.${self:provider.stage}.domain}
+    basePath: ''
+    stage: ${self:provider.stage}
+    createRoute53Record: true
+  dev:
+    domain: "api-dev.hapihourapp.com"
+    region: "ap-southeast-2" # Sydney
+  prod:
+    domain: "api.hapihourapp.com"
+    region: "ap-southeast-2"
+
+resources:
+  Outputs:
+    ApiGatewayRestApiId:
+      Value:
+        Ref: ApiGatewayRestApi
+      Export:
+        Name: hh-${self:provider.stage}-ApiGatewayRestApiId
+    ApiGatewayRestApiRootResourceId:
+      Value:
+         Fn::GetAtt:
+          - ApiGatewayRestApi
+          - RootResourceId
+      Export:
+        Name: hh-${self:provider.stage}-ApiGatewayRestApiRootResourceId
+    AuthorizerRef:
+      Value:
+        Ref: FirebaseAuthorizerApiGatewayAuthorizer
+      Export:
+        Name: hh-${self:provider.stage}-FirebaseAuthorizer
