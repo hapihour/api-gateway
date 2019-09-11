@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"errors"
-	"log"
 	"os"
 	"strings"
 
@@ -26,23 +25,18 @@ func handler(request events.APIGatewayCustomAuthorizerRequest) (events.APIGatewa
 
 	app, err := firebase.NewApp(ctx, nil, opt)
 	if err != nil {
-		log.Fatalf("error initialising app: %v\n", err)
-		return renderUnauthorized()
+		return events.APIGatewayCustomAuthorizerResponse{}, errors.New("Internal Error")
 	}
 
 	client, err := app.Auth(ctx)
 	if err != nil {
-		log.Fatalf("error getting Auth client: %v\n", err)
-		return renderUnauthorized()
+		return events.APIGatewayCustomAuthorizerResponse{}, errors.New("Internal Error")
 	}
 
 	token, err := client.VerifyIDToken(ctx, idToken)
 	if err != nil {
-		log.Fatalf("error verifying ID token: %v\n", err)
-		return renderUnauthorized()
+		return events.APIGatewayCustomAuthorizerResponse{}, errors.New("Unauthorized")
 	}
-
-	log.Printf("Verified UID: %v\n", token.UID)
 
 	context := map[string]interface{}{
 		"HH-UID": token.UID,
@@ -72,8 +66,4 @@ func generatePolicy(principalID, effect string, resource string, context map[str
 
 	authResponse.Context = context
 	return authResponse
-}
-
-func renderUnauthorized() (events.APIGatewayCustomAuthorizerResponse, error) {
-	return events.APIGatewayCustomAuthorizerResponse{}, errors.New("Unauthorized")
 }
